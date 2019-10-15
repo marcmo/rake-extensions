@@ -104,21 +104,24 @@ class TomlVersioner
   end
 end
 class GemspecVersioner
+  REGEX = /^(\s*.*?\.version\s*?=\s*['\"])(.*)(['\"])/i
   def initialize(version_dir)
+    puts "GemspecVersioner dir: #{version_dir}"
     @version_dir = version_dir
   end
   def get_next_version(jump)
     current_version = get_current_version()
+    puts "GemspecVersioner current_version: #{current_version}"
     v = Version.new(current_version)
     v.send(jump)
   end
   def get_current_version()
     current_version = nil
     FileUtils.cd @version_dir, :verbose => false do
-      ['*.gemspec'].each do |file|
+      FileList['*.gemspec'].each do |file|
         text = File.read(file)
-        if match = text.match(/^\s*.*\.\version\s*=\s*['\"](.*)['\"]/i)
-          current_version = match.captures[0]
+        if match = text.match(REGEX)
+          current_version = match.captures[1]
         end
       end
     end
@@ -133,7 +136,7 @@ class GemspecVersioner
     FileUtils.cd @version_dir, :verbose => false do
       ['package.json'].each do |file|
         text = File.read(file)
-        new_contents = text.gsub(/^(\s*.*\.\version\s*=\s*['\"])(.*)(['\"])/i, "\1#{new_version}\3")
+        new_contents = text.gsub(REGEX, "\1#{new_version}\3")
         File.open(file, "w") { |f| f.puts new_contents }
       end
     end
