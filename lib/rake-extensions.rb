@@ -67,7 +67,19 @@ class Versioner
   end
 end
 
-class TomlVersioner
+def current_version_with_regex(filelist, r)
+  current_version = nil
+  FileUtils.cd @version_dir, :verbose => false do
+    filelist.each do |file|
+      text = File.read(file)
+      if match = text.match(r)
+        current_version = match.captures[1]
+      end
+    end
+  end
+  current_version
+end
+class Versioner
   def initialize(version_dir)
     @version_dir = version_dir
   end
@@ -76,60 +88,32 @@ class TomlVersioner
     v = Version.new(current_version)
     v.send(jump)
   end
-  def get_current_version()
-    current_version = nil
-    FileUtils.cd @version_dir, :verbose => false do
-      ['Cargo.toml'].each do |file|
-        text = File.read(file)
-        if match = text.match(/^version\s=\s\"(.*)\"/i)
-          current_version = match.captures[0]
-        end
-      end
-    end
-    current_version
-  end
   def increment_version(jump)
     next_version = get_next_version(jump)
     puts "increment version from #{get_current_version} ==> #{next_version}"
     update_version(next_version)
+  end
+end
+class TomlVersioner < Versioner
+  VERSION_REGEX = /^(version\s=\s['\"])(\d+\.\d+\.\d+)(['\"])/i
+  def get_current_version()
+    current_version_with_regex(['Cargo.toml'], VERSION_REGEX)
   end
   def update_version(new_version)
     FileUtils.cd @version_dir, :verbose => false do
       ['Cargo.toml'].each do |file|
         text = File.read(file)
-        new_contents = text.gsub(/^version\s=\s\"\d+\.\d+\.\d+\"/, "version = \"#{new_version}\"")
+        new_contents = text.gsub(VERSION_REGEX, "\\1#{new_version}\\3")
         File.open(file, "w") { |f| f.puts new_contents }
       end
     end
   end
 end
-class GemspecVersioner
+class GemspecVersioner < Versioner
   VERSION_REGEX = /^(\s*.*?\.version\s*?=\s*['\"])(.*)(['\"])/i
   DATE_REGEX = /^(\s*.*?\.date\s*?=\s*['\"])(.*)(['\"])/
-  def initialize(version_dir)
-    @version_dir = version_dir
-  end
-  def get_next_version(jump)
-    current_version = get_current_version()
-    v = Version.new(current_version)
-    v.send(jump)
-  end
   def get_current_version()
-    current_version = nil
-    FileUtils.cd @version_dir, :verbose => false do
-      FileList['*.gemspec'].each do |file|
-        text = File.read(file)
-        if match = text.match(VERSION_REGEX)
-          current_version = match.captures[1]
-        end
-      end
-    end
-    current_version
-  end
-  def increment_version(jump)
-    next_version = get_next_version(jump)
-    puts "increment version from #{get_current_version} ==> #{next_version}"
-    update_version(next_version)
+    current_version_with_regex(FileList['*.gemspec'], VERSION_REGEX)
   end
   def update_version(new_version)
     FileUtils.cd @version_dir, :verbose => false do
@@ -143,37 +127,16 @@ class GemspecVersioner
     end
   end
 end
-class JsonVersioner
-  def initialize(version_dir)
-    @version_dir = version_dir
-  end
-  def get_next_version(jump)
-    current_version = get_current_version()
-    v = Version.new(current_version)
-    v.send(jump)
-  end
+class JsonVersioner < Versioner
+  VERSION_REGEX = /^(\s\s['\"]version['\"]:\s['\"])(.*)(['\"])/i
   def get_current_version()
-    current_version = nil
-    FileUtils.cd @version_dir, :verbose => false do
-      ['package.json'].each do |file|
-        text = File.read(file)
-        if match = text.match(/^\s\s\"version\":\s\"(.*)\"/i)
-          current_version = match.captures[0]
-        end
-      end
-    end
-    current_version
-  end
-  def increment_version(jump)
-    next_version = get_next_version(jump)
-    puts "increment version from #{get_current_version} ==> #{next_version}"
-    update_version(next_version)
+    current_version_with_regex(['package.json'], VERSION_REGEX)
   end
   def update_version(new_version)
     FileUtils.cd @version_dir, :verbose => false do
       ['package.json'].each do |file|
         text = File.read(file)
-        new_contents = text.gsub(/^\s\s\"version\":\s\"\d+\.\d+\.\d+\"/, "  \"version\": \"#{new_version}\"")
+        new_contents = text.gsub(VERSION_REGEX, "\\1#{new_version}\\3")
         File.open(file, "w") { |f| f.puts new_contents }
       end
     end

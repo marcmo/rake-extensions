@@ -5,9 +5,6 @@ task :create_release do
   current_tag = `git describe --tags`
   versioner = Versioner.for(:gemspec, ".")
   current_version = versioner.get_current_version
-  if !current_tag.start_with?(current_version)
-    raise "current tag #{current_tag} does not match with current gem version: #{current_version}"
-  end
   require 'highline'
   cli = HighLine.new
   cli.choose do |menu|
@@ -38,8 +35,6 @@ def create_and_tag_new_version(versioner, jump)
   puts "to undo the last commit and the tag, execute:"
   puts "git reset --hard HEAD~1 && git tag -d #{next_version.to_s}"
 end
-
-
 
 def gem_file_name
   versioner = Versioner.for(:gemspec, ".")
