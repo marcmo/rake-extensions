@@ -134,10 +134,10 @@ class GemspecVersioner
   end
   def update_version(new_version)
     FileUtils.cd @version_dir, :verbose => false do
-      ['package.json'].each do |file|
+      FileList['*.gemspec'].each do |file|
         text = File.read(file)
-        new_contents = text.gsub(REGEX, "\1#{new_version}\3")
-        File.open(file, "w") { |f| f.puts new_contents }
+        new_contents = text.gsub(REGEX, "\\1#{new_version}\\3")
+        File.open(file, "w") { |f| f.write new_contents }
       end
     end
   end
@@ -230,6 +230,9 @@ task :push do
   sh "git push origin"
   current_version = get_current_version
   sh "git push origin #{current_version}"
+end
+def assert_tag_exists(version)
+  raise "tag #{version} missing" if `git tag -l #{version}`.length == 0
 end
 def create_changelog(current_version, next_version)
   sha1s = `git log #{current_version}..HEAD --oneline`.strip.split(/\n/).collect { |line| line.split(' ').first }
