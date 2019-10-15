@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'rake-extensions'
-  s.version     = '0.0.1'
+  s.version     = '0.1.0'
   s.date        = '2019-10-15'
   s.summary     = "collection of rake utilities"
   s.description = "useful add-ons for writing rake tasks"
