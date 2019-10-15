@@ -1,5 +1,8 @@
 # Changelog
 
+### [0.3.0] - 10/15/2019
+* [](feat): refactored versioners
+
 ### [0.2.0] - 10/15/2019
 * [](chore): added rake task to prepare release
 * [](chore): put gem file to gitignore, should not be checked in
