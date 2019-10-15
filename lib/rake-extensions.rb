@@ -104,14 +104,13 @@ class TomlVersioner
   end
 end
 class GemspecVersioner
-  REGEX = /^(\s*.*?\.version\s*?=\s*['\"])(.*)(['\"])/i
+  VERSION_REGEX = /^(\s*.*?\.version\s*?=\s*['\"])(.*)(['\"])/i
+  DATE_REGEX = /^(\s*.*?\.date\s*?=\s*['\"])(.*)(['\"])/
   def initialize(version_dir)
-    puts "GemspecVersioner dir: #{version_dir}"
     @version_dir = version_dir
   end
   def get_next_version(jump)
     current_version = get_current_version()
-    puts "GemspecVersioner current_version: #{current_version}"
     v = Version.new(current_version)
     v.send(jump)
   end
@@ -120,7 +119,7 @@ class GemspecVersioner
     FileUtils.cd @version_dir, :verbose => false do
       FileList['*.gemspec'].each do |file|
         text = File.read(file)
-        if match = text.match(REGEX)
+        if match = text.match(VERSION_REGEX)
           current_version = match.captures[1]
         end
       end
@@ -136,7 +135,9 @@ class GemspecVersioner
     FileUtils.cd @version_dir, :verbose => false do
       FileList['*.gemspec'].each do |file|
         text = File.read(file)
-        new_contents = text.gsub(REGEX, "\\1#{new_version}\\3")
+        today = Time.now.strftime("%Y-%m-%d")
+        correct_date_contents = text.gsub(DATE_REGEX, "\\1#{today}\\3")
+        new_contents = correct_date_contents.gsub(VERSION_REGEX, "\\1#{new_version}\\3")
         File.open(file, "w") { |f| f.write new_contents }
       end
     end
